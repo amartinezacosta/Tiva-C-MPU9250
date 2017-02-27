@@ -9,7 +9,9 @@ CMD_SRCS += \
 ../tm4c123gh6pm.cmd 
 
 C_SRCS += \
+../alarm.c \
 ../console.c \
+../gpio.c \
 ../i2c.c \
 ../main.c \
 ../mpu.c \
@@ -17,7 +19,9 @@ C_SRCS += \
 ../uartstdio.c 
 
 C_DEPS += \
+./alarm.d \
 ./console.d \
+./gpio.d \
 ./i2c.d \
 ./main.d \
 ./mpu.d \
@@ -25,7 +29,9 @@ C_DEPS += \
 ./uartstdio.d 
 
 OBJS += \
+./alarm.obj \
 ./console.obj \
+./gpio.obj \
 ./i2c.obj \
 ./main.obj \
 ./mpu.obj \
@@ -33,7 +39,9 @@ OBJS += \
 ./uartstdio.obj 
 
 OBJS__QUOTED += \
+"alarm.obj" \
 "console.obj" \
+"gpio.obj" \
 "i2c.obj" \
 "main.obj" \
 "mpu.obj" \
@@ -41,7 +49,9 @@ OBJS__QUOTED += \
 "uartstdio.obj" 
 
 C_DEPS__QUOTED += \
+"alarm.d" \
 "console.d" \
+"gpio.d" \
 "i2c.d" \
 "main.d" \
 "mpu.d" \
@@ -49,7 +59,9 @@ C_DEPS__QUOTED += \
 "uartstdio.d" 
 
 C_SRCS__QUOTED += \
+"../alarm.c" \
 "../console.c" \
+"../gpio.c" \
 "../i2c.c" \
 "../main.c" \
 "../mpu.c" \

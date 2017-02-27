@@ -2,6 +2,7 @@
 #define MPU_H_
 
 #include "i2c.h"
+#include "gpio.h"
 
 #define SELF_TEST_X_GYRO    0x00
 #define SELF_TEST_Y_GYRO    0x01
@@ -104,10 +105,13 @@
 #define ZA_OFFSET_H         0x7D
 #define ZA_OFFSET_L         0x7E
 
-void init_mpu(void);
-void mpu_read_accelerometer(int16_t *data);
-void mpu_read_gyro(int16_t *data);
-void mpu_read_temperature(uint16_t *data);
-void mpu_who_ami(uint8_t *id);
+#define MPU9250             0x68
+
+
+void MPU9250_Init(uint8_t acelerometer_resolution, uint8_t gyroscope_resolution);
+void MPU9250_AccelerometerRead(float *accelerations);
+void MPU9250_GyroscopeRead(float *angles);
+void MPU9250_TemperatureRead(float *temperature);
+void MPU9250_WhoAmI(uint8_t *id);
 
 #endif /* MPU_H_ */

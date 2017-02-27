@@ -18,8 +18,10 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/sysctl.h"
 
-void i2c_write(uint8_t data);
-uint32_t i2c_read(void);
-void init_i2c(void);
+void I2C_WriteBytes(uint8_t device_address, uint8_t device_register, uint8_t *data, uint8_t lenght);
+void I2C_WriteByte(uint8_t slave_address, uint8_t slave_register, uint8_t data);
+void I2C_ReadBytes(uint8_t device_address, uint8_t device_register, uint8_t *data, uint8_t lenght);
+uint8_t I2C_ReadByte(uint8_t device_address, uint8_t device_register);
+void I2C_Init(void);
 
 #endif /* I2C_H_ */

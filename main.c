@@ -1,5 +1,6 @@
 #include "mpu.h"
 #include "console.h"
+#include "alarm.h"
 
 #define X   0
 #define Y   1
@@ -8,50 +9,33 @@
 int main(void) {
     SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
     InitConsole();
-    init_mpu();
+    MPU9250_Init(0, 0);
+    Alarms_Init();
+    #ifdef MPU9250_INTERRUPT
+    IntMasterEnable();
+    #endif
 
-    /*raw data variables*/
-    int16_t accelerometer[3];
-    int16_t gyroscope[3];
     uint8_t id;
 
-    /*float value conversions*/
-    float acceleration[3];
-    float angle[3];
-    float aRes = 4.0/32768.0;
-    float gRes = 500.0/32768.0;
-
-    /*checking connection here*/
-    mpu_who_ami(&id);
+    /*Checking connection here*/
+    MPU9250_WhoAmI(&id);
     if(id == 0x71){
-        //we are connected
+        /*We are connected set armed alarm*/
+        LED_ArmedAlarm();
     }else{
-        //connection failed somehow, check connections
+        /*connection failed somehow, set failed alarm. Check connections*/
         UARTprintf("Connection failed id found: %x", id);
+        LED_FailedAlarm();
         while(1);
     }
 
+    float accelerations[3];
+    float angles[3];
+
+    MPU9250_GyroscopeRead(angles);
+    MPU9250_AccelerometerRead(accelerations);
+
     while(1){
-        mpu_read_accelerometer(accelerometer);
-        mpu_read_gyro(gyroscope);
 
-        /*UARTprintf("X: %i\n", accelerometer[0]);
-        UARTprintf("Y: %i\n", accelerometer[1]);
-        UARTprintf("Z: %i\n\n", accelerometer[2]);
-
-        UARTprintf("X angle: %i\n", gyroscope[0]);
-        UARTprintf("Y angle: %i\n", gyroscope[1]);
-        UARTprintf("Z angle: %i\n\n", gyroscope[2]);*/
-
-        /*converting raw values*/
-        acceleration[X] = (float)accelerometer[X]*aRes;
-        acceleration[Y] = (float)accelerometer[Y]*aRes;
-        acceleration[Z] = (float)accelerometer[Z]*aRes;
-
-        angle[X] = (float)gyroscope[X]*gRes;
-        angle[Y] = (float)gyroscope[Y]*gRes;
-        angle[Z] = (float)gyroscope[Z]*gRes;
-
-        SysCtlDelay(100);
     }
 }

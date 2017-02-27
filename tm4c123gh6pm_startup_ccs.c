@@ -41,6 +41,7 @@ static void IntDefaultHandler(void);
 //
 //*****************************************************************************
 extern void _c_int00(void);
+//extern void MPU9250_InterruptHandler(void); /*Uncomment and add function to vector table*/
 
 //*****************************************************************************
 //
