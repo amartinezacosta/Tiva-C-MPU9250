@@ -1,24 +1,17 @@
-#include "mpu.h"
+#include "mpu9250.h"
 #include "console.h"
 #include "alarm.h"
-
-#define X   0
-#define Y   1
-#define Z   2
 
 int main(void) {
     SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
     InitConsole();
-    MPU9250_Init(0, 0);
     Alarms_Init();
-    #ifdef MPU9250_INTERRUPT
-    IntMasterEnable();
-    #endif
+    I2C_Init();
 
     uint8_t id;
 
     /*Checking connection here*/
-    MPU9250_WhoAmI(&id);
+    id = MPU_WhoAmI();
     if(id == 0x71){
         /*We are connected set armed alarm*/
         LED_ArmedAlarm();
@@ -29,13 +22,31 @@ int main(void) {
         while(1);
     }
 
-    float accelerations[3];
-    float angles[3];
+    MPU_WritePowerManagement1(CLKSEL_1);
+    MPU_WriteGyroConfiguration(GYRO_FS_SELECT_250);
+    MPU_WriteAcceConfiguration(ACCE_FS_SELECT_2G);
 
-    MPU9250_GyroscopeRead(angles);
-    MPU9250_AccelerometerRead(accelerations);
+    float acceleration_bias[3];
+    float degree_bias[3];
+
+    MPU9250_calibrate(acceleration_bias, degree_bias);
+
+    float acceleration[3];
+    float degrees[3];
+    float temperature;
 
     while(1){
+        MPU9250_Motion(acceleration, degrees);
+        MPU9250_Temperature(&temperature);
 
+        acceleration[0] -= acceleration_bias[0];
+        acceleration[1] -= acceleration_bias[1];
+        acceleration[2] -= acceleration_bias[2];
+
+        degrees[0] -= degree_bias[0];
+        degrees[1] -= degree_bias[1];
+        degrees[2] -= degree_bias[2];
+
+        SysCtlDelay(1000);
     }
 }

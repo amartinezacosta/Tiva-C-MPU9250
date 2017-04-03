@@ -1,240 +1,406 @@
 #include "mpu.h"
+#include "mpu9250_rm.h"
 
-float aRes;
-float gRes;
-uint8_t aScale = 0;
-uint8_t gScale = 0;
-
-void MPU9250_SetAccelerometerResolution(uint8_t resolution){
-    switch(resolution){
-    case 0:
-        aRes = 2.0 / 32768.0;
-        aScale = 0;
-        break;
-    case 1:
-        aRes = 4.0 / 32768.0;
-        aScale = 1;
-        break;
-    case 2:
-        aRes = 8.0 / 32768.0;
-        aScale = 2;
-        break;
-    case 3:
-        aRes = 16.0 / 32768.0;
-        aScale = 3;
-        break;
-    default:
-        aRes = 2.0 / 32768.0;
-        aScale = 0;
-        break;
-    }
+/*Self Test Gyroscope and Accelerometer Registers*/
+void MPU_WriteSelfTestGyro(uint8_t *data){
+    I2C_WriteBytes(MPU9250, SELF_TEST_X_GYRO, data, 3);
 }
 
-void MPU9250_SetGyroscopeResolution(uint8_t resolution){
-    switch(resolution){
-       case 0:
-           gRes = 250.0 / 32768.0;
-           gScale = 0;
-           break;
-       case 1:
-           gRes = 500.0 / 32768.0;
-           gScale = 1;
-           break;
-       case 2:
-           gRes = 1000.0 / 32768.0;
-           gScale = 2;
-           break;
-       case 3:
-           gRes = 2000.0 / 32768.0;
-           gScale = 3;
-           break;
-       default:
-           gRes = 250.0 / 32768.0;
-           gScale = 0;
-           break;
-       }
+void MPU_ReadSelfTestGyro(uint8_t *data){
+    I2C_ReadBytes(MPU9250, SELF_TEST_X_GYRO, data, 3);
+}
+void MPU_WriteSelfTestAcce(uint8_t *data){
+    I2C_WriteBytes(MPU9250, SELF_TEST_X_ACCEL, data, 3);
 }
 
-void MPU9250_Calibrate(void){
-    uint8_t data[12];
-    uint16_t fifo_count, packet_count, i;
-    int32_t acceleration_bias[3] = {0, 0, 0};
-    int32_t gyroscope_bias[3] = {0, 0, 0};
+void MPU_ReadSelfTestAcce(uint8_t *data){
+    I2C_WriteBytes(MPU9250, SELF_TEST_X_ACCEL, data, 3);
+}
 
-    I2C_WriteByte(MPU9250, PWR_MGMT_1, 0x80);
-
-    I2C_WriteByte(MPU9250, PWR_MGMT_1, 0x01);
-    I2C_WriteByte(MPU9250, PWR_MGMT_2, 0x00);
-
-    I2C_WriteByte(MPU9250, INT_ENABLE, 0x00);
-    I2C_WriteByte(MPU9250, FIFO_EN, 0x00);
-    I2C_WriteByte(MPU9250, PWR_MGMT_1, 0x00);
-    I2C_WriteByte(MPU9250, I2C_MST_CTRL, 0x00);
-    I2C_WriteByte(MPU9250, USER_CTRL, 0x00);
-    I2C_WriteByte(MPU9250, USER_CTRL, 0x0C);
-
-    I2C_WriteByte(MPU9250, CONFIG, 0x01);
-    I2C_WriteByte(MPU9250, SMPLRT_DIV, 0x00);
-    I2C_WriteByte(MPU9250, GYRO_CONFIG, 0x00);
-    I2C_WriteByte(MPU9250, ACCEL_CONFIG, 0x00);
-
-    I2C_WriteByte(MPU9250, USER_CTRL, 0x40);
-    I2C_WriteByte(MPU9250, FIFO_EN, 0x78);
-
-    I2C_WriteByte(MPU9250, FIFO_EN, 0x00);
-    data[0] = I2C_ReadByte(MPU9250, FIFO_COUNTH);
-    fifo_count = (data[0] << 8) | data[1];
-    packet_count = fifo_count / 12;
-
-    int16_t a_temp[3] = {0, 0, 0};
-    int16_t g_temp[3] = {0, 0, 0};
-
-    for(i = 0; i < packet_count; i++){
-        I2C_ReadBytes(MPU9250, FIFO_R_W, data, 12);
-        a_temp[0] = (data[0] << 8) | data[1];
-        a_temp[1] = (data[2] << 8) | data[3];
-        a_temp[2] = (data[4] << 8) | data[5];
-        g_temp[0] = (data[6] << 8) | data[7];
-        g_temp[1] = (data[8] << 8) | data[9];
-        g_temp[2] = (data[10] << 8) | data[11];
-
-        acceleration_bias[0] += a_temp[0];
-        acceleration_bias[1] += a_temp[1];
-        acceleration_bias[2] += a_temp[2];
-
-        gyroscope_bias[0] += g_temp[0];
-        gyroscope_bias[1] += g_temp[1];
-        gyroscope_bias[2] += g_temp[2];
-    }
-
-    acceleration_bias[0] /= packet_count;
-    acceleration_bias[1] /= packet_count;
-    acceleration_bias[2] /= packet_count;
-
-    gyroscope_bias[0] /= packet_count;
-    gyroscope_bias[1] /= packet_count;
-    gyroscope_bias[2] /= packet_count;
-
-    if( acceleration_bias[2] > 0){
-        acceleration_bias[2] -= 16384;
-    }
-
-    data[0] = (-gyroscope_bias[0]/4 >> 8)   & 0xFF;
-    data[1] = (-gyroscope_bias[0]/4)        & 0xFF;
-    data[2] = (-gyroscope_bias[1]/4 >> 8)   & 0xFF;
-    data[3] = (-gyroscope_bias[1]/4)        & 0xFF;
-    data[4] = (-gyroscope_bias[2]/4 >> 8)   & 0xFF;
-    data[5] = (-gyroscope_bias[2]/4)        & 0xFF;
-
+/*Offsets Gyroscope and Accelerometer Registers*/
+void MPU_WriteOffsetsGyro(uint8_t *data){
     I2C_WriteBytes(MPU9250, XG_OFFSET_H, data, 6);
+}
 
-    int32_t a_reg_bias[3] = {0, 0, 0};
-    I2C_ReadBytes(MPU9250, XA_OFFSET_H, data, 2);
-    a_reg_bias[0] = (data[0] << 8) | data[1];
-    I2C_ReadBytes(MPU9250, YA_OFFSET_H, data, 2);
-    a_reg_bias[1] = (data[0] << 8) | data[1];
-    I2C_ReadBytes(MPU9250, ZA_OFFSET_H, data, 2);
-    a_reg_bias[2] = (data[0] << 8) | data[1];
+void MPU_ReadOffsetsGyro(uint8_t *data){
+    I2C_ReadBytes(MPU9250, XG_OFFSET_H, data, 6);
+}
 
-    uint32_t mask = 1uL;
-    uint8_t mask_bit[3] = {0, 0, 0};
-
-    for(i = 0; i < 3; i++) {
-        if((a_reg_bias[i] & mask)) mask_bit[i] = 0x01;
-    }
-
-    a_reg_bias[0] -= (acceleration_bias[0]/8);
-    a_reg_bias[1] -= (acceleration_bias[1]/8);
-    a_reg_bias[2] -= (acceleration_bias[2]/8);
-
-    data[0] = (a_reg_bias[0]/4 >> 8)   & 0xFF;
-    data[1] = (a_reg_bias[0]/4)        & 0xFF;
-    data[1] = data[1] | mask_bit[0];
-    data[2] = (a_reg_bias[1]/4 >> 8)   & 0xFF;
-    data[3] = (a_reg_bias[1]/4)        & 0xFF;
-    data[3] = data[3] | mask_bit[1];
-    data[4] = (a_reg_bias[2]/4 >> 8)   & 0xFF;
-    data[5] = (a_reg_bias[2]/4)        & 0xFF;
-    data[5] = data[5] | mask_bit[2];
-
+void MPU_WriteOffsetsAcce(uint8_t *data){
     I2C_WriteBytes(MPU9250, XA_OFFSET_H, data, 6);
-
-
 }
 
-void MPU9250_Init(uint8_t acelerometer_resolution, uint8_t gyroscope_resolution){
-    I2C_Init();
-    MPU9250_Calibrate();
-    MPU9250_SetAccelerometerResolution(acelerometer_resolution);
-    MPU9250_SetGyroscopeResolution(gyroscope_resolution);
-
-    #ifdef MPU9250_INTERRUPT
-    I2C_WriteByte(MPU9250, PWR_MGMT_1, 0x00);
-    I2C_WriteByte(MPU9250, PWR_MGMT_2, 0x07);
-    I2C_WriteByte(MPU9250, ACCEL_CONFIG_2, 0x09);
-    I2C_WriteByte(MPU9250, INT_ENABLE, 0x40);
-    I2C_WriteByte(MPU9250, MOT_DETECT_CTRL, 0xA0);
-    I2C_WriteByte(MPU9250, WOM_THR, 0xFF);
-    I2C_WriteByte(MPU9250, LP_ACCEL_ODR, 0x07);
-    I2C_WriteByte(MPU9250, PWR_MGMT_1, 0x10);
-    #endif
-
-    I2C_WriteByte(MPU9250, PWR_MGMT_1, 0x00);
-    I2C_WriteByte(MPU9250, PWR_MGMT_1, 0x01);
-    I2C_WriteByte(MPU9250, CONFIG, 0x03);
-    I2C_WriteByte(MPU9250, SMPLRT_DIV, 0x04);
-    I2C_WriteByte(MPU9250, GYRO_CONFIG, 0x00);
-    I2C_WriteByte(MPU9250, ACCEL_CONFIG, 0x00);
-    I2C_WriteByte(MPU9250, ACCEL_CONFIG_2, 0x03);
-    I2C_WriteByte(MPU9250, INT_PIN_CFG, 0x22);
-    I2C_WriteByte(MPU9250, INT_ENABLE, 0x01);
+void MPU_ReadOffsetsAcce(uint8_t *data){
+    I2C_ReadBytes(MPU9250, XA_OFFSET_H, data, 6);
 }
 
-void MPU9250_AccelerometerRead(float *accelerations){
-    int16_t data[3];
-    uint8_t raw_data[6];
-    I2C_ReadBytes(MPU9250, ACCEL_XOUT_H,  raw_data, 6);
-
-    data[0] = (raw_data[0] << 8)  | raw_data[1];
-    data[1] = (raw_data[2] << 8)  | raw_data[3];
-    data[2] = (raw_data[4] << 8)  | raw_data[5];
-
-    accelerations[0] = data[0] * aRes;
-    accelerations[1] = data[1] * aRes;
-    accelerations[2] = data[2] * aRes;
+/*Sample Rate Divider Register*/
+void MPU_WriteSampleRateDivider(uint8_t data){
+    I2C_WriteByte(MPU9250, SMPLRT_DIV, data);
 }
 
-void MPU9250_GyroscopeRead(float *angles){
-    int16_t data[3];
-    uint8_t raw_data[6];
-    I2C_ReadBytes(MPU9250, GYRO_XOUT_H, raw_data, 6);
-
-    data[0] = (raw_data[0] << 8)  | raw_data[1];
-    data[1] = (raw_data[2] << 8)  | raw_data[3];
-    data[2] = (raw_data[4] << 8)  | raw_data[5];
-
-    angles[0] = data[0] * gRes;
-    angles[1] = data[1] * gRes;
-    angles[2] = data[2] * gRes;
+uint8_t MPU_ReadSampleRateDivider(void){
+    return I2C_ReadByte(MPU9250, SMPLRT_DIV);
 }
 
-void MPU9250_TemperatureRead(float *temperature){
-    uint16_t data;
-    uint8_t raw_data[2];
-    I2C_ReadBytes(MPU9250, TEMP_OUT_H, raw_data, 2);
-
-    data = (raw_data[0] << 8) | raw_data[1];
-
-    *temperature = data;
+/*Configuration Register*/
+void MPU_WriteConfiguration(uint8_t data){
+    I2C_WriteByte(MPU9250, CONFIG, data);
 }
 
-#ifdef MPU9250_INTERRUPT
-void MPU9250_InterruptHandler(void){
-    GPIO_ClearInterrupt();
+uint8_t MPU_ReadConfiguration(void){
+    return I2C_ReadByte(MPU9250, CONFIG);
 }
-#endif
 
-void MPU9250_WhoAmI(uint8_t *id){
-    *id = I2C_ReadByte(MPU9250, WHO_AM_I);
+/*Gyroscope Configuration Register*/
+void MPU_WriteGyroConfiguration(uint8_t data){
+    I2C_WriteByte(MPU9250, GYRO_CONFIG, data);
 }
+
+uint8_t MPU_ReadGyroConfiguration(void){
+    return I2C_ReadByte(MPU9250, GYRO_CONFIG);
+}
+
+/*Accelerometer Configuration Register*/
+void MPU_WriteAcceConfiguration(uint8_t data){
+    I2C_WriteByte(MPU9250, ACCEL_CONFIG, data);
+}
+
+uint8_t MPU_ReadAcceConfiguration(void){
+    return I2C_ReadByte(MPU9250, ACCEL_CONFIG);
+}
+
+/*Accelerometer Configuration 2 Register*/
+void MPU_WriteAcceConfiguration2(uint8_t data){
+    I2C_WriteByte(MPU9250, ACCEL_CONFIG_2, data);
+}
+
+uint8_t MPU_ReadAcceConfiguration2(void){
+    return I2C_ReadByte(MPU9250, ACCEL_CONFIG_2);
+}
+
+/*Low Power Accelerometer ODR Control Register*/
+void MPU_WriteAcceLowPowerODR(uint8_t data){
+    I2C_WriteByte(MPU9250, LP_ACCEL_ODR, data);
+}
+
+uint8_t MPU_ReadAcceLowPowerODR(void){
+    return I2C_ReadByte(MPU9250, LP_ACCEL_ODR);
+}
+
+/*Wake On Motion Threshold Register*/
+void MPU_WriteWakeOnMotion(uint8_t data){
+    I2C_WriteByte(MPU9250, WOM_THR, data);
+}
+
+uint8_t MPU_ReadWakeOnMotion(void){
+    return I2C_ReadByte(MPU9250, WOM_THR);
+}
+
+/*FIFO Enable Register*/
+void MPU_WriteFIFOEnable(uint8_t data){
+    I2C_WriteByte(MPU9250, FIFO_EN, data);
+}
+
+uint8_t MPU_ReadFIFOEnable(void){
+    return I2C_ReadByte(MPU9250, FIFO_EN);
+}
+
+/*I2C Master Control Register*/
+void MPU_WriteI2CMasterControl(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_MST_CTRL, data);
+}
+
+uint8_t MPU_ReadI2CMasterControl(void){
+    return I2C_ReadByte(MPU9250, I2C_MST_CTRL);
+}
+
+/*I2C Slave 0 Control Registers*/
+void MPU_WriteI2CSlave0Addr(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV0_ADDR, data);
+}
+
+uint8_t MPU_ReadI2Slave0Addr(void){
+    return I2C_ReadByte(MPU9250, SMPLRT_DIV);
+}
+
+void MPU_WriteI2CSlave0Reg(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV0_REG, data);
+}
+
+uint8_t MPU_ReadI2Slave0Reg(void){
+    return I2C_ReadByte(MPU9250, SMPLRT_DIV);
+}
+
+void MPU_WriteI2CSlave0Ctrl(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV0_CTRL, data);
+}
+
+uint8_t MPU_ReadI2Slave0Ctrl(void){
+    return I2C_ReadByte(MPU9250, SMPLRT_DIV);
+}
+
+void MPU_WriteI2CSlave0DO(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV0_DO, data);
+}
+
+uint8_t MPU_ReadI2Slave0DO(void){
+    return I2C_ReadByte(MPU9250, SMPLRT_DIV);
+}
+
+/*I2C Slave 1 Control Registers*/
+void MPU_WriteI2CSlave1Addr(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV1_ADDR, data);
+}
+
+uint8_t MPU_ReadI2Slave1Addr(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV1_ADDR);
+}
+
+void MPU_WriteI2CSlave1Reg(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV1_REG, data);
+}
+
+uint8_t MPU_ReadI2Slave1Reg(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV1_REG);
+}
+
+void MPU_WriteI2CSlave1Ctrl(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV1_CTRL, data);
+}
+
+uint8_t MPU_ReadI2Slave1Ctrl(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV1_CTRL);
+}
+
+void MPU_WriteI2CSlave1DO(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV1_DO, data);
+}
+
+uint8_t MPU_ReadI2Slave1DO(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV1_DO);
+}
+
+/*I2C Slave 2 Control Registers*/
+void MPU_WriteI2CSlave2Addr(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV2_ADDR, data);
+}
+
+uint8_t MPU_ReadI2Slave2Addr(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV2_ADDR);
+}
+
+void MPU_WriteI2CSlave2Reg(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV2_REG, data);
+}
+
+uint8_t MPU_ReadI2Slave2Reg(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV2_REG);
+}
+
+void MPU_WriteI2CSlave2Ctrl(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV2_CTRL, data);
+}
+
+uint8_t MPU_ReadI2Slave2Ctrl(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV2_CTRL);
+}
+
+void MPU_WriteI2CSlave2DO(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV2_DO, data);
+}
+
+uint8_t MPU_ReadI2Slave2DO(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV2_DO);
+}
+
+/*I2C Slave 3 Control Registers*/
+void MPU_WriteI2CSlave3Addr(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV3_ADDR, data);
+}
+
+uint8_t MPU_ReadI2Slave3Addr(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV3_ADDR);
+}
+
+void MPU_WriteI2CSlave3Reg(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV3_REG, data);
+}
+
+uint8_t MPU_ReadI2Slave3Reg(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV3_REG);
+}
+
+void MPU_WriteI2CSlave3Ctrl(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV3_CTRL, data);
+}
+
+uint8_t MPU_ReadI2Slave3Ctrl(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV3_CTRL);
+}
+
+void MPU_WriteI2CSlave3DO(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV3_DO, data);
+}
+
+uint8_t MPU_ReadI2Slave3DO(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV3_DO);
+}
+
+/*I2C Slave 4 Control Registers*/
+void MPU_WriteI2CSlave4Addr(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV4_ADDR, data);
+}
+
+uint8_t MPU_ReadI2Slave4Addr(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV4_ADDR);
+}
+
+void MPU_WriteI2CSlave4Reg(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV4_REG, data);
+}
+
+uint8_t MPU_ReadI2Slave4Reg(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV4_REG);
+}
+
+void MPU_WriteI2CSlave4Ctrl(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV4_CTRL, data);
+}
+
+uint8_t MPU_ReadI2Slave4Ctrl(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV4_CTRL);
+}
+
+void MPU_WriteI2CSlave4DO(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_SLV4_DO, data);
+}
+
+uint8_t MPU_ReadI2Slave4DO(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV4_DO);
+}
+
+uint8_t MPU_ReadI2Slave4DI(void){
+    return I2C_ReadByte(MPU9250, I2C_SLV4_DI);
+}
+
+/*I2C Master Status Register*/
+uint8_t MPU_ReadI2CMasterStatus(void){
+    return I2C_ReadByte(MPU9250, I2C_MST_STATUS);
+}
+
+/*INT Pin / Bypass Enable Configuration Register*/
+void MPU_WriteINTPinEnable(uint8_t data){
+    I2C_WriteByte(MPU9250, INT_PIN_CFG, data);
+}
+
+uint8_t MPU_ReadINTPinEnable(void){
+    return I2C_ReadByte(MPU9250, INT_PIN_CFG);
+}
+
+/*Interrupt Enable Register*/
+void MPU_WriteINTEnable(uint8_t data){
+    I2C_WriteByte(MPU9250, INT_ENABLE, data);
+}
+uint8_t MPU_ReadINTEnable(void){
+    return I2C_ReadByte(MPU9250, INT_ENABLE);
+}
+
+/*Interrupt Status Register*/
+uint8_t MPU_ReadINTStatus(void){
+    return I2C_ReadByte(MPU9250, INT_STATUS);
+}
+
+/*Accelerometer, Gyroscope and Temperature Measurements Registers*/
+void MPU_ReadAccelerometer(uint8_t *data){
+    I2C_ReadBytes(MPU9250, ACCEL_XOUT_H, data, 6);
+}
+
+void MPU_ReadGyroscope(uint8_t *data){
+    I2C_ReadBytes(MPU9250, GYRO_XOUT_H, data, 6);
+}
+
+void MPU_ReadTemperature(uint8_t *data){
+    I2C_ReadBytes(MPU9250, TEMP_OUT_H, data, 2);
+}
+
+/*External Sensor Data Registers*/
+void MPU_ReadExternalSensors(uint8_t *data, uint8_t size){
+    I2C_ReadBytes(MPU9250, EXT_SENS_DATA_00, data, size);
+}
+
+/*I2C Master Delay Control Register*/
+void MPU_WriteI2CMasterDelayCtl(uint8_t data){
+    I2C_WriteByte(MPU9250, I2C_MST_DELAY_CTRL, data);
+}
+
+uint8_t MPU_ReadI2CMasterDelayCtl(void){
+    return I2C_ReadByte(MPU9250, I2C_MST_DELAY_CTRL);
+}
+
+/*Signal Path Reset Register*/
+void MPU_WriteSignalPathReset(uint8_t data){
+    I2C_WriteByte(MPU9250, SIGNAL_PATH_RESET, data);
+}
+
+uint8_t MPU_ReadSignalPathReset(void){
+    return I2C_ReadByte(MPU9250, SIGNAL_PATH_RESET);
+}
+
+/*Accelerometer Interrupt Control Register*/
+void MPU_WriteAcceIntControl(uint8_t data){
+    I2C_WriteByte(MPU9250, MOT_DETECT_CTRL, data);
+}
+
+uint8_t MPU_ReadAcceIntControl(void){
+    return I2C_ReadByte(MPU9250, MOT_DETECT_CTRL);
+}
+
+/*User Control Register*/
+void MPU_WriteUserControl(uint8_t data){
+    I2C_WriteByte(MPU9250, USER_CTRL, data);
+}
+
+uint8_t MPU_ReadUserControl(void){
+    return I2C_ReadByte(MPU9250, USER_CTRL);
+}
+
+/*Power Management 1 Register*/
+void MPU_WritePowerManagement1(uint8_t data){
+    I2C_WriteByte(MPU9250, PWR_MGMT_1, data);
+}
+
+uint8_t MPU_ReadPowerManagement1(void){
+    return I2C_ReadByte(MPU9250, PWR_MGMT_1);
+}
+
+/*Power Management 2 Register*/
+void MPU_WritePowerManagement2(uint8_t data){
+    I2C_WriteByte(MPU9250, PWR_MGMT_2, data);
+}
+
+uint8_t MPU_ReadPowerManagement2(void){
+    return I2C_ReadByte(MPU9250, PWR_MGMT_2);
+}
+
+/*FIFO Count Registers*/
+void MPU_ReadFIFOCount(uint8_t *data){
+    I2C_ReadBytes(MPU9250, FIFO_COUNTH, data, 2);
+}
+
+/*FIFO Read Write Register*/
+uint8_t MPU_ReadFIFO(void){
+    return I2C_ReadByte(MPU9250, FIFO_R_W);
+}
+
+void MPU_WriteFIFO(uint8_t data){
+    I2C_WriteByte(MPU9250, FIFO_R_W, data);
+}
+
+/*Who Am I Register*/
+uint8_t MPU_WhoAmI(void){
+    return I2C_ReadByte(MPU9250, WHO_AM_I);
+}
+
+
 

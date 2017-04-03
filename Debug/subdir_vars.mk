@@ -15,6 +15,7 @@ C_SRCS += \
 ../i2c.c \
 ../main.c \
 ../mpu.c \
+../mpu9250.c \
 ../tm4c123gh6pm_startup_ccs.c \
 ../uartstdio.c 
 
@@ -25,6 +26,7 @@ C_DEPS += \
 ./i2c.d \
 ./main.d \
 ./mpu.d \
+./mpu9250.d \
 ./tm4c123gh6pm_startup_ccs.d \
 ./uartstdio.d 
 
@@ -35,6 +37,7 @@ OBJS += \
 ./i2c.obj \
 ./main.obj \
 ./mpu.obj \
+./mpu9250.obj \
 ./tm4c123gh6pm_startup_ccs.obj \
 ./uartstdio.obj 
 
@@ -45,6 +48,7 @@ OBJS__QUOTED += \
 "i2c.obj" \
 "main.obj" \
 "mpu.obj" \
+"mpu9250.obj" \
 "tm4c123gh6pm_startup_ccs.obj" \
 "uartstdio.obj" 
 
@@ -55,6 +59,7 @@ C_DEPS__QUOTED += \
 "i2c.d" \
 "main.d" \
 "mpu.d" \
+"mpu9250.d" \
 "tm4c123gh6pm_startup_ccs.d" \
 "uartstdio.d" 
 
@@ -65,6 +70,7 @@ C_SRCS__QUOTED += \
 "../i2c.c" \
 "../main.c" \
 "../mpu.c" \
+"../mpu9250.c" \
 "../tm4c123gh6pm_startup_ccs.c" \
 "../uartstdio.c" 
 

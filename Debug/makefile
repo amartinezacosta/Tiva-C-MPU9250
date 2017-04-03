@@ -16,6 +16,7 @@ ORDERED_OBJS += \
 "./i2c.obj" \
 "./main.obj" \
 "./mpu.obj" \
+"./mpu9250.obj" \
 "./tm4c123gh6pm_startup_ccs.obj" \
 "./uartstdio.obj" \
 "../tm4c123gh6pm.cmd" \
@@ -161,8 +162,8 @@ MPU9250.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "alarm.obj" "console.obj" "gpio.obj" "i2c.obj" "main.obj" "mpu.obj" "tm4c123gh6pm_startup_ccs.obj" "uartstdio.obj" 
-	-$(RM) "alarm.d" "console.d" "gpio.d" "i2c.d" "main.d" "mpu.d" "tm4c123gh6pm_startup_ccs.d" "uartstdio.d" 
+	-$(RM) "alarm.obj" "console.obj" "gpio.obj" "i2c.obj" "main.obj" "mpu.obj" "mpu9250.obj" "tm4c123gh6pm_startup_ccs.obj" "uartstdio.obj" 
+	-$(RM) "alarm.d" "console.d" "gpio.d" "i2c.d" "main.d" "mpu.d" "mpu9250.d" "tm4c123gh6pm_startup_ccs.d" "uartstdio.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

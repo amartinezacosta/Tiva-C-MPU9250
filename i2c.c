@@ -56,7 +56,7 @@ void I2C_ReadBytes(uint8_t device_address, uint8_t device_register, uint8_t *dat
 
     data[0] = I2CMasterDataGet(I2C0_BASE);
 
-    for(i = 0; i < lenght; i++){
+    for(i = 1; i < lenght - 1; i++){
         I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_CONT);
         while(I2CMasterBusy(I2C0_BASE));
         data[i] = I2CMasterDataGet(I2C0_BASE);
