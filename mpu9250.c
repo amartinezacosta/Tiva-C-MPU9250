@@ -43,6 +43,7 @@ void MPU9250_calibrate(float *acceleration_bias, float *degree_bias){
     deg_bias[1] = deg_sum[1] / packets;
     deg_bias[2] = deg_sum[2] / packets;
 
+    /*The sensitivity should change accordingly*/
     acceleration_bias[0] = (float)(2 * accel_bias[0])/32768;
     acceleration_bias[1] = (float)(2 * accel_bias[1])/32768;
     acceleration_bias[2] = (float)(2 * accel_bias[2])/32768;
