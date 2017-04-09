@@ -21,6 +21,11 @@ main.obj: ../alarm.h
 main.obj: ../gpio.h
 main.obj: C:/ti/TivaWare_C_Series-2.1.3.156/driverlib/interrupt.h
 main.obj: C:/ti/TivaWare_C_Series-2.1.3.156/inc/hw_ints.h
+main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/math.h
+main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/linkage.h
+main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/_defs.h
+main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/stdio.h
+main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/stdarg.h
 
 ../main.c: 
 ../mpu9250.h: 
@@ -43,3 +48,8 @@ C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/stdarg.h:
 ../gpio.h: 
 C:/ti/TivaWare_C_Series-2.1.3.156/driverlib/interrupt.h: 
 C:/ti/TivaWare_C_Series-2.1.3.156/inc/hw_ints.h: 
+C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/math.h: 
+C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/linkage.h: 
+C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/_defs.h: 
+C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/stdio.h: 
+C:/ti/ccsv7/tools/compiler/ti-cgt-arm_16.9.0.LTS/include/stdarg.h: 
